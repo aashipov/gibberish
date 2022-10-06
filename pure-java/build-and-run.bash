@@ -8,8 +8,8 @@ IMAGE="aashipov/${CONTAINER_NAME}"
 TAG="purejava${DISTRO}"
 
 usage() {
-    echo "usage: $(basename $0) distro"
-    echo "  distro  - alpine, centos or corretto (on alpine)"
+    echo "usage: $(basename $0) distro[.flavor]"
+    echo "  distro[.flavor]  - alpine, alpine.corretto... (substring in filename after Dockerfile.)"
 }
 
 stop_and_remove_container(){

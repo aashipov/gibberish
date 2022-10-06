@@ -1,4 +1,4 @@
-FROM aashipov/docker:alpinedummyjdk11u AS builder
+FROM aashipov/docker:alpinedummycorrettoo3jdk11u AS builder
 ARG DUMMY_USER=dummy
 ARG BUILD_DIR=/${DUMMY_USER}
 USER root
@@ -8,7 +8,7 @@ USER ${DUMMY_USER}
 WORKDIR ${BUILD_DIR}
 RUN ./mvnw clean package -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true
 
-FROM aashipov/docker:alpinedummyjre11u
+FROM aashipov/docker:alpinedummycorrettoo3jre11u
 ARG DUMMY_USER=dummy
 ARG BUILD_DIR=/${DUMMY_USER}
 USER root

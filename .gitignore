@@ -39,3 +39,4 @@ go/go
 *.jtl
 *.png
 test-results/README.md
+pure-java/dependency-reduced-pom.xml

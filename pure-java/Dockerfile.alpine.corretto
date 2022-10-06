@@ -12,6 +12,6 @@ FROM amazoncorretto:11.0.16-alpine
 ARG DUMMY_USER=dummy
 ARG BUILD_DIR=/${DUMMY_USER}
 USER root
-COPY --from=builder ${BUILD_DIR}/target/calc*shaded.jar /app.jar
+COPY --from=builder ${BUILD_DIR}/target/*shaded.jar /app.jar
 EXPOSE 8080
 CMD java -jar /app.jar

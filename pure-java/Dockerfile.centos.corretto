@@ -1,0 +1,31 @@
+FROM aashipov/docker:centosdummyjava AS correttodownloader
+ARG JDK_TAG=11.0.16.9.1
+ARG JDK_TAR_GZ=amazon-corretto-${JDK_TAG}-linux-x64.tar.gz
+ARG JDK_TAR_GZ_IN_TMP=/tmp/${JDK_TAR_GZ}
+ADD https://corretto.aws/downloads/resources/${JDK_TAG}/${JDK_TAR_GZ} /tmp/
+RUN tar -xzf ${JDK_TAR_GZ_IN_TMP} -C ${JAVA_HOME}/ --strip-components=1 && \
+find "${JAVA_HOME}" -type f -name '*.debuginfo' -exec rm {} \; && \
+find "${JAVA_HOME}" -type f -name '*.diz' -exec rm {} \; && \
+rm -rf ${JAVA_HOME}/demo/ ${JAVA_HOME}/lib/src.zip ${JAVA_HOME}/man/ && \
+java --version
+
+FROM aashipov/docker:centosdummycorrettoo3jdk11u AS jarbuilder
+ARG DUMMY_USER=dummy
+ARG BUILD_DIR=/${DUMMY_USER}
+USER root
+WORKDIR ${BUILD_DIR}
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} ./ ./
+USER ${DUMMY_USER}
+WORKDIR ${BUILD_DIR}
+RUN ./mvnw clean package -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true
+
+FROM aashipov/docker:centosdummyjava
+ARG DUMMY_USER=dummy
+ARG BUILD_DIR=/${DUMMY_USER}
+USER root
+COPY --from=correttodownloader ${JAVA_HOME}/ ${JAVA_HOME}/
+COPY --from=jarbuilder --chown=${DUMMY_USER}:${DUMMY_USER} ${BUILD_DIR}/target/*shaded.jar /dummy/app.jar
+WORKDIR /${DUMMY_USER}/
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD java -jar app.jar
