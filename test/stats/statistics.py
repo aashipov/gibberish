@@ -1,8 +1,4 @@
 # Based on https://www.reneshbedre.com/blog/anova.html
-# pip install statsmodels seaborn
-#
-# cat Load-test_20220922_192617.jtl | cut -d ',' -f2 > some.csv
-# paste -d ',' *.csv > paste.csv
 
 import pandas
 import statsmodels.api
@@ -54,9 +50,11 @@ def do_tukey(df_melt):
 
 
 def do_catplot(df_melt):
+    with open('paste.csv', 'r') as f:
+         num_lines = sum(1 for _ in f)
     cp = seaborn.catplot(data=df_melt, kind="bar", x="value", y="variable")
-    cp.set_axis_labels("Request elapsed time (the lower the better)", "Programming language")
-    matplotlib.pyplot.gcf().set_size_inches(20, 20)
+    cp.set_axis_labels("Request elapsed time (the lower the better), top " + str(num_lines - 1) + " records", "Implementation")
+    matplotlib.pyplot.gcf().set_size_inches(10, 5)
     matplotlib.pyplot.savefig('catplot.png')
 
 def main():

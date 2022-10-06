@@ -1,0 +1,144 @@
+FROM centos:7 AS dummy
+ARG DUMMY_USER=dummy
+ARG UID_GID=10001
+RUN yum -y update && yum -y upgrade && yum -y install file && yum -y clean all && \
+groupadd -g ${UID_GID} ${DUMMY_USER} && useradd -m -u ${UID_GID} -d /${DUMMY_USER}/ -g ${DUMMY_USER} ${DUMMY_USER}
+
+FROM dummy AS java
+ENV JAVA_HOME=/opt/java
+ENV PATH=${JAVA_HOME}/bin:${PATH}
+RUN mkdir -p ${JAVA_HOME}
+
+FROM java as jre17
+# DOCKER_BUILDKIT=1 docker build . --file=docker/Dockerfile.centos --target=jre17 --tag=aashipov/gibberish:centos-jre17 && docker push aashipov/gibberish:centos-jre17
+RUN curl -L -o /tmp/java.tar.gz https://github.com/aashipov/openjdk-build/releases/download/1.0.0/jre17u-linux-x86_64-jdk-17.0.7+7.tar.gz && \
+tar -xzf /tmp/java.tar.gz -C ${JAVA_HOME}/ --strip-components=1 && \
+find "${JAVA_HOME}" -type f -name '*.debuginfo' -exec rm {} \; && \
+find "${JAVA_HOME}" -type f -name '*.diz' -exec rm {} \; && \
+rm -rf ${JAVA_HOME}/demo/ ${JAVA_HOME}/lib/src.zip ${JAVA_HOME}/man/ /tmp/java.tar.gz && \
+java -version && file ${JAVA_HOME}/bin/java
+
+FROM jre17 AS javaresult
+# DOCKER_BUILDKIT=1 docker build pure-java --file=docker/Dockerfile.centos --target=javaresult --tag=aashipov/gibberish:centos-pure && docker push aashipov/gibberish:centos-pure
+ARG DUMMY_USER=dummy
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} target/gibberish*shaded.jar /dummy/app.jar
+WORKDIR /${DUMMY_USER}/
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD java -jar app.jar
+
+FROM dummy AS javanativeresult
+# DOCKER_BUILDKIT=1 docker build pure-java --file=docker/Dockerfile.centos --target=javanativeresult --tag=aashipov/gibberish:centos-pure-native && docker push aashipov/gibberish:centos-pure-native
+ARG DUMMY_USER=dummy
+COPY target/gibberish /dummy/gibberish
+WORKDIR /${DUMMY_USER}/
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD ./gibberish
+
+FROM java as temurin17
+# DOCKER_BUILDKIT=1 docker build . --file=docker/Dockerfile.centos --target=temurin17 --tag=aashipov/gibberish:centos-temurin17 && docker push aashipov/gibberish:centos-temurin17
+RUN curl -L -o /tmp/java.tar.gz https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.7_7.tar.gz && \
+tar -xzf /tmp/java.tar.gz -C ${JAVA_HOME}/ --strip-components=1 && \
+find "${JAVA_HOME}" -type f -name '*.debuginfo' -exec rm {} \; && \
+find "${JAVA_HOME}" -type f -name '*.diz' -exec rm {} \; && \
+rm -rf ${JAVA_HOME}/demo/ ${JAVA_HOME}/lib/src.zip ${JAVA_HOME}/man/ /tmp/java.tar.gz && \
+java -version && file ${JAVA_HOME}/bin/java
+
+FROM temurin17 AS temurinresult
+# DOCKER_BUILDKIT=1 docker build pure-java --file=docker/Dockerfile.centos --target=temurinresult --tag=aashipov/gibberish:centos-pure-temurin && docker push aashipov/gibberish:centos-pure-temurin
+ARG DUMMY_USER=dummy
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} target/gibberish*shaded.jar /dummy/app.jar
+WORKDIR /${DUMMY_USER}/
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD java -jar app.jar
+
+FROM dummy AS dotnet
+ENV DOTNET_ROOT=/opt/dotnet DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 DOTNET_CLI_TELEMETRY_OPTOUT=1
+ENV PATH=${DOTNET_ROOT}:${PATH}
+RUN mkdir -p ${DOTNET_ROOT}
+
+FROM dotnet AS dotnet6
+# DOCKER_BUILDKIT=1 docker build . --file=docker/Dockerfile.centos --target=dotnet6 --tag=aashipov/gibberish:centos-dotnet6 && docker push aashipov/gibberish:centos-dotnet6
+RUN curl -L -o /tmp/dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/6.0.411/dotnet-sdk-6.0.411-linux-x64.tar.gz && \
+tar -xzf /tmp/dotnet.tar.gz -C ${DOTNET_ROOT} && \
+rm -rf /tmp/dotnet.tar.gz && \
+dotnet --info && file ${DOTNET_ROOT}/dotnet
+
+FROM dotnet6 AS dotnetresult
+# DOCKER_BUILDKIT=1 docker build dotnet --file=docker/Dockerfile.centos --target=dotnetresult --tag=aashipov/gibberish:centos-dotnet && docker push aashipov/gibberish:centos-dotnet
+ARG DUMMY_USER=dummy
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} ./app/ /dummy/
+WORKDIR /${DUMMY_USER}
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD ./gibberish
+
+# DOCKER_BUILDKIT=1 docker build go --file=docker/Dockerfile.centos --target=golangresult --tag=aashipov/gibberish:centos-go && docker push aashipov/gibberish:centos-go
+FROM dummy AS golangresult
+ARG DUMMY_USER=dummy
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} go /dummy/
+WORKDIR /${DUMMY_USER}
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD ./go
+
+FROM dummy AS nodejs
+ENV NODE_HOME=/opt/nodejs
+ENV PATH=${NODE_HOME}/bin:${PATH}
+RUN curl -L -o /tmp/nodejs.tar.gz https://nodejs.org/dist/latest-v16.x/node-v16.20.1-linux-x64.tar.gz && \
+mkdir -p ${NODE_HOME} && \
+tar -xzf /tmp/nodejs.tar.gz -C ${NODE_HOME} --strip-components=1 && \
+rm -rf /tmp/nodejs.tar.gz && \
+node --version
+
+# DOCKER_BUILDKIT=1 docker build nodejs --file=docker/Dockerfile.centos --target=nodejsresult --tag=aashipov/gibberish:centos-nodejs && docker push aashipov/gibberish:centos-nodejs
+FROM nodejs AS nodejsresult
+ARG DUMMY_USER=dummy
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} ./ /dummy/
+WORKDIR /${DUMMY_USER}
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD node server.js
+
+FROM dummy AS python
+RUN yum -y install centos-release-scl && yum -y install rh-python36 && yum -y clean all
+
+# DOCKER_BUILDKIT=1 docker build python --file=docker/Dockerfile.centos --target=pythonresult --tag=aashipov/gibberish:centos-python && docker push aashipov/gibberish:centos-python
+FROM python AS pythonresult
+ARG DUMMY_USER=dummy
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} ./ /dummy/
+WORKDIR /${DUMMY_USER}
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD ["scl", "enable", "rh-python36", "python ./server.py"]
+
+FROM dummy AS rust
+ARG DUMMY_USER=dummy
+ENV PATH=/dummy/.cargo/bin:${PATH}
+RUN yum -y update && yum -y install epel-release && yum -y install cmake gcc make curl && yum -y clean all
+WORKDIR /${DUMMY_USER}
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} ./ ./
+USER ${DUMMY_USER}
+RUN curl -L -o /tmp/rustup-init https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init && \
+chmod +x /tmp/rustup-init && \
+/tmp/rustup-init -y && \
+rm -rf /tmp/rustup-init && \
+cargo --version
+
+FROM rust AS rustbuilder
+ARG DUMMY_USER=dummy
+WORKDIR /${DUMMY_USER}
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} ./ ./
+USER ${DUMMY_USER}
+RUN cargo build --release
+
+# DOCKER_BUILDKIT=1 docker build rust-actix-web --file=docker/Dockerfile.centos --target=rustresult --tag=aashipov/gibberish:centos-rust-actix-web && docker push aashipov/gibberish:centos-rust-actix-web
+FROM dummy AS rustresult
+ARG DUMMY_USER=dummy
+COPY --chown=${DUMMY_USER}:${DUMMY_USER} --from=rustbuilder /dummy/target/release/rust-actix /dummy/rust
+WORKDIR /${DUMMY_USER}
+EXPOSE 8080
+USER ${DUMMY_USER}
+CMD ./rust
