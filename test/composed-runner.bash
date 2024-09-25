@@ -17,12 +17,12 @@ stop_and_remove_container() {
 
 main() {
     local TAKES_COUNT=5
-    local IMPLEMENTATIONS=("pure" "pure-temurin" "pure-native" "dotnet" "go" "nodejs" "python")
+    local IMPLEMENTATIONS=("pure" "pure-temurin" "dotnet" "go" "nodejs" "python" "rust-actix-web")
     for implementation in "${IMPLEMENTATIONS[@]}"; do
         local TAKE_NO=1
         while [ ${TAKE_NO} -le ${TAKES_COUNT} ]; do
             stop_and_remove_container
-            docker run -d --name=${CONTAINER_NAME} -p 8080:8080 aashipov/gibberish:centos-${implementation}
+            docker run -d --rm --name=${CONTAINER_NAME} -p 8080:8080 aashipov/gibberish:fedora-${implementation}
             rm -rf ${_SCRIPT_DIR}/bin/gibberish-load-test/result
             rm -rf ${_SCRIPT_DIR}/client
             rm -rf ${_SCRIPT_DIR}/server

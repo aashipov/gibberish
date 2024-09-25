@@ -6,8 +6,7 @@
 # call stats
 
 install_stats_packages() {
-    #pip install --user statsmodels seaborn
-    pip install statsmodels seaborn
+    pip install --user 'statsmodels==0.14.1' 'seaborn==0.12.2'
 }
 
 remove_leftovers() {
